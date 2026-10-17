@@ -55,9 +55,12 @@ jobs:
         git clone https://github.com/osm0sis/AnyKernel3.git anykernel
         rm -rf anykernel/.git
         
-        # Set nama device di anykernel.sh
+        # Konfigurasi anykernel.sh untuk POCO X5 5G (Qualcomm A/B Slot)
+        sed -i 's/kernel.string=.*/kernel.string=SkillIssue Kernel Moonstone/g' anykernel/anykernel.sh
         sed -i 's/device.name1=.*/device.name1=moonstone/g' anykernel/anykernel.sh
         sed -i 's/device.name2=.*/device.name2=stone/g' anykernel/anykernel.sh
+        sed -i 's|block=.*|block=auto;|g' anykernel/anykernel.sh
+        sed -i 's/is_slot_device=.*/is_slot_device=auto;/g' anykernel/anykernel.sh
 
         # Salin Image
         cp out/arch/arm64/boot/Image anykernel/
