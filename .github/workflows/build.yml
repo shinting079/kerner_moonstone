@@ -55,12 +55,30 @@ jobs:
         git clone https://github.com/osm0sis/AnyKernel3.git anykernel
         rm -rf anykernel/.git
         
-        # Konfigurasi anykernel.sh untuk POCO X5 5G (Qualcomm A/B Slot)
-        sed -i 's/kernel.string=.*/kernel.string=SkillIssue Kernel Moonstone/g' anykernel/anykernel.sh
-        sed -i 's/device.name1=.*/device.name1=moonstone/g' anykernel/anykernel.sh
-        sed -i 's/device.name2=.*/device.name2=stone/g' anykernel/anykernel.sh
-        sed -i 's|block=.*|block=auto;|g' anykernel/anykernel.sh
-        sed -i 's/is_slot_device=.*/is_slot_device=auto;/g' anykernel/anykernel.sh
+        # Tulis langsung isi anykernel.sh kustom
+        cat << 'EOF' > anykernel/anykernel.sh
+        # AnyKernel3 Ramdisk Mod Script
+        # osm0sis @ xda-developers
+
+        properties() { '
+        kernel.string=SkillIssue Kernel for POCO X5 5G / Redmi Note 12 5G (stone)
+        do.devicecheck=1
+        device.name1=moonstone
+        device.name2=sunstone
+        device.name3=gemstone
+        device.name4=stone
+        do.cleanup=1
+        '; }
+
+        block=boot;
+        is_slot_device=auto;
+        no_block_display=1;
+
+        . tools/ak3-core.sh;
+
+        split_boot;
+        flash_boot;
+        EOF
 
         # Salin Image
         cp out/arch/arm64/boot/Image anykernel/
