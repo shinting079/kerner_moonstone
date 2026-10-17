@@ -52,7 +52,7 @@ jobs:
 
     - name: Package AnyKernel3 Flashable Zip
       run: |
-        git clone https://github.com/kernel-makers/AnyKernel3.git anykernel
+        git clone https://github.com/osm0sis/AnyKernel3.git anykernel
         rm -rf anykernel/.git
         
         # Salin file Image kernel, dtb, dan dtbo ke folder AnyKernel3
