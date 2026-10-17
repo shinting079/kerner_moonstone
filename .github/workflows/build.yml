@@ -7,62 +7,30 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Setup Environment & Dependencies
+    - uses: actions/checkout@v4
+    - name: Setup Deps
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm wget zip git ccache \
-          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
-
-    - name: Setup Toolchain (【entity-Proton¦canonical_name=Proton】 Clang)
+        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev
+    - name: Setup WeebX Clang
       run: |
-        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git tc/clang
-        # FIX UTAMA UNTUK ERROR .relr.dyn
-        rm -f tc/clang/bin/ld tc/clang/bin/ld.lld tc/clang/bin/ld64.lld
-        tc/clang/bin/clang --version
-
+        mkdir -p tc
+        cd tc
+        wget -q https://github.com/XSans0/WeebX-Clang/releases/latest/download/WeebX-Clang.tar.gz -O clang.tar.gz
+        tar -xzf clang.tar.gz
+        # foldernya kadang WeebX-Clang, rename jadi clang
+        mv WeebX-Clang clang 2>/dev/null || mv weebx-clang clang 2>/dev/null || true
+        ./clang/bin/clang --version
     - name: Build Kernel
       run: |
         export PATH="$GITHUB_WORKSPACE/tc/clang/bin:$PATH"
-        export ARCH=arm64
-        export SUBARCH=arm64
-        export KBUILD_BUILD_USER="Julian"
-        export KBUILD_BUILD_HOST="Github-Actions"
-        export KBUILD_COMPILER_STRING="$(clang --version | head -n 1)"
-
         mkdir -p out
-        
-        # defconfig
-        make O=out \
-          CC=clang \
-          HOSTCC=gcc HOSTCXX=g++ \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 \
-          AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf \
-          stone_defconfig
-
-        # build
-        make O=out \
-          CC=clang \
-          HOSTCC=gcc HOSTCXX=g++ \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 \
-          AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf \
-          -j$(nproc --all)
-
-    - name: Upload Kernel Artifact
+        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 stone_defconfig
+        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc --all)
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: Moonstone-Kernel-Image
-        path: |
-          out/arch/arm64/boot/Image
-          out/arch/arm64/boot/Image.gz
-          out/arch/arm64/boot/dtbo.img
-          out/arch/arm64/boot/dtb.img
+        path: out/arch/arm64/boot/Image*
