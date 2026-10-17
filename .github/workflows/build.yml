@@ -30,10 +30,12 @@ jobs:
         export CC=clang
         export CROSS_COMPILE=aarch64-linux-gnu-
         export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+        export HOSTCC=gcc
+        export HOSTCXX=g++
         
         mkdir -p out
         make O=out stone_defconfig
-        make O=out HOSTCC=gcc HOSTCXX=g++ -j$(nproc)
+        make O=out -j$(nproc)
 
     - name: Upload Kernel Artifact
       uses: actions/upload-artifact@v4
