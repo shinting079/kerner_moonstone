@@ -1,0 +1,33 @@
+#include "../qcom/blair-qrd-nopmi.dts"
+#include "stone-audio.dts"
+#include "stone-camera.dts"
+#include "stone-consumerir.dts"
+#include "stone-display.dts"
+#include "stone-fingerprint.dts"
+#include "stone-memory.dts"
+#include "stone-nfc.dts"
+#include "stone-pinctrl.dts"
+#include "stone-pmic.dts"
+#include "stone-regulator.dts"
+#include "stone-thermal.dts"
+#include "stone-touchscreen.dts"
+#include "stone-vibrator.dts"
+#include "stone-virtualsar.dts"
+
+&qcom {
+	/delete-property/ mem-type;
+	pmsg-size = <0x100000>;
+	console-size = <0x100000>;
+};
+
+&ufshc_mem {
+	spm-level = <3>;
+};
+
+&sdhc_2 {
+	cd-gpios = <&tlmm 94 GPIO_ACTIVE_HIGH>;
+};
+
+&firmware {
+	/delete-node/ android;
+};
