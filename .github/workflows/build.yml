@@ -10,24 +10,31 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-    - name: Setup Dependencies
+    - name: Install Deps
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm ccache zip
 
-    - name: Setup Clang (Anti 404)
+    - name: Setup 【entity-Proton¦canonical_name=Proton】 Clang
+      shell: bash
       run: |
         rm -rf tc
         mkdir -p tc
-        git clone --depth=1 https://github.[STRIPPED 71 bytes].git tc/clang
-        tc/clang/bin/clang --version
+        cd tc
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+        # FIX 1: hapus ld jadul (fix error .relr.dyn)
+        rm -f clang/bin/ld clang/bin/ld.lld clang/bin/ld64.lld
+        ./clang/bin/clang --version
 
-    - name: Patch Kernel 5.4 buat Clang 17+
+    - name: Patch Kernel 5.4 buat Clang baru
       run: |
+        # FIX 2: fix error scalar initializer cannot be empty
         sed -i 's/typeof(x) __dummy2 = {};/typeof(x) __dummy2;/g' include/linux/typecheck.h
         sed -i 's/type __dummy = {};/type __dummy;/g' include/linux/typecheck.h
+        cat include/linux/typecheck.h
 
     - name: Build Kernel
       run: |
@@ -35,20 +42,21 @@ jobs:
         export ARCH=arm64
         export SUBARCH=arm64
         mkdir -p out
-        
+
         if [ -f arch/arm64/configs/vendor/moonstone_defconfig ]; then
           DEFCONFIG=vendor/moonstone_defconfig
         else
           DEFCONFIG=moonstone_defconfig
         fi
 
-        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 $DEFCONFIG
-        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc --all)
+        make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf $DEFCONFIG
 
-    - name: Upload Image
+        make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf -j$(nproc --all)
+
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: Moonstone-Kernel
+        name: Moonstone-Morpheus
         path: |
           out/arch/arm64/boot/Image*
           out/arch/arm64/boot/dtbo.img
