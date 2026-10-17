@@ -10,81 +10,45 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout Kernel
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
     - name: Setup Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm git ccache zip
+        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm ccache zip
 
-    - name: Setup WeebX Clang (Recommended buat 5.4)
+    - name: Setup Clang (Anti 404)
       run: |
+        rm -rf tc
         mkdir -p tc
-        cd tc
-        wget -q https://github.com/XSans0/WeebX-Clang/releases/latest/download/WeebX-Clang.tar.gz -O clang.tar.gz
-        tar -xzf clang.tar.gz
-        # rename folder biar jadi tc/clang
-        mv WeebX-Clang clang 2>/dev/null || mv weebx-clang clang 2>/dev/null || true
-        ./clang/bin/clang --version
-        ls ./clang/bin/
+        git clone --depth=1 https://github.[STRIPPED 71 bytes].git tc/clang
+        tc/clang/bin/clang --version
 
-    - name: Patch Kernel 5.4 buat Clang baru
+    - name: Patch Kernel 5.4 buat Clang 17+
       run: |
-        # FIX 1: scalar initializer cannot be empty
         sed -i 's/typeof(x) __dummy2 = {};/typeof(x) __dummy2;/g' include/linux/typecheck.h
         sed -i 's/type __dummy = {};/type __dummy;/g' include/linux/typecheck.h
-        
-        # FIX 2: kadang ada di compiler.h buat clang 17+
-        sed -i 's/CONFIG_GCC_PLUGINS//g' arch/arm64/configs/moonstone_defconfig 2>/dev/null || true
-        sed -i 's/CONFIG_GCC_PLUGINS//g' arch/arm64/configs/vendor/moonstone_defconfig 2>/dev/null || true
 
     - name: Build Kernel
       run: |
         export PATH="$GITHUB_WORKSPACE/tc/clang/bin:$PATH"
         export ARCH=arm64
         export SUBARCH=arm64
-        export KBUILD_BUILD_USER="GodOfTheSea"
-        export KBUILD_BUILD_HOST="Olympus"
-        export KBUILD_COMPILER_STRING="$(clang --version | head -n 1)"
-
         mkdir -p out
-
-        # Deteksi defconfig yang bener
+        
         if [ -f arch/arm64/configs/vendor/moonstone_defconfig ]; then
           DEFCONFIG=vendor/moonstone_defconfig
         else
           DEFCONFIG=moonstone_defconfig
         fi
-        echo "Pakai $DEFCONFIG"
 
         make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 $DEFCONFIG
+        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc --all)
 
-        # Build Image
-        make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 -j$(nproc --all) 2>&1 | tee build.log
-
-        # Cek hasil
-        ls -lh out/arch/arm64/boot/
-
-    - name: Package AnyKernel3
-      run: |
-        git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git -b master ak3
-        cp out/arch/arm64/boot/Image ak3/ 2>/dev/null || cp out/arch/arm64/boot/Image.gz ak3/ 2>/dev/null || true
-        cp out/arch/arm64/boot/dtbo.img ak3/ 2>/dev/null || true
-        cp out/arch/arm64/boot/dtb.img ak3/ 2>/dev/null || true
-        # kalau ada dtb folder
-        find out/arch/arm64/boot/dts -name "*.dtb" -exec cp {} ak3/ \; 2>/dev/null || true
-        cd ak3
-        zip -r9 ../Morpheus-Moonstone-Kernel.zip * -x .git README.md *placeholder
-        cd ..
-
-    - name: Upload Artifacts
+    - name: Upload Image
       uses: actions/upload-artifact@v4
       with:
-        name: Morpheus-Moonstone-Build
+        name: Moonstone-Kernel
         path: |
-          out/arch/arm64/boot/Image
-          out/arch/arm64/boot/Image.gz
+          out/arch/arm64/boot/Image*
           out/arch/arm64/boot/dtbo.img
-          Morpheus-Moonstone-Kernel.zip
-          build.log
