@@ -16,25 +16,27 @@ jobs:
     - name: Install Deps
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm ccache zip
+        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm ccache zip binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-    - name: Setup 【entity-Proton¦canonical_name=Proton】 Clang
+    - name: Setup Proton Clang
       shell: bash
       run: |
         rm -rf tc
         mkdir -p tc
         cd tc
         git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
-        # FIX 1: hapus ld jadul (fix error .relr.dyn)
         rm -f clang/bin/ld clang/bin/ld.lld clang/bin/ld64.lld
         ./clang/bin/clang --version
 
-    - name: Patch Kernel 5.4 buat Clang baru
+    - name: Check Defconfig
       run: |
-        # FIX 2: fix error scalar initializer cannot be empty
+        ls arch/arm64/configs/ | grep -i stone
+        # harusnya keluar stone_defconfig
+
+    - name: Patch Kernel buat Clang baru
+      run: |
         sed -i 's/typeof(x) __dummy2 = {};/typeof(x) __dummy2;/g' include/linux/typecheck.h
         sed -i 's/type __dummy = {};/type __dummy;/g' include/linux/typecheck.h
-        cat include/linux/typecheck.h
 
     - name: Build Kernel
       run: |
@@ -43,20 +45,16 @@ jobs:
         export SUBARCH=arm64
         mkdir -p out
 
-        if [ -f arch/arm64/configs/vendor/moonstone_defconfig ]; then
-          DEFCONFIG=vendor/moonstone_defconfig
-        else
-          DEFCONFIG=moonstone_defconfig
-        fi
-
-        make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf $DEFCONFIG
+        # PAKAI stone_defconfig KARENA ITU YANG ADA DI REPO LU
+        make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf stone_defconfig
 
         make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf -j$(nproc --all)
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: Moonstone-Morpheus
+        name: Moonstone-Kernel-Image
         path: |
           out/arch/arm64/boot/Image*
           out/arch/arm64/boot/dtbo.img
+          out/arch/arm64/boot/dtb
