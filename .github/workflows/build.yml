@@ -50,11 +50,21 @@ jobs:
 
         make O=out ARCH=arm64 CC=clang HOSTCC=gcc HOSTCXX=g++ CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf -j$(nproc --all)
 
+    - name: Package AnyKernel3 Flashable Zip
+      run: |
+        git clone https://github.com/kernel-makers/AnyKernel3.git anykernel
+        rm -rf anykernel/.git
+        
+        # Salin file Image kernel, dtb, dan dtbo ke folder AnyKernel3
+        cp out/arch/arm64/boot/Image anykernel/
+        cp out/arch/arm64/boot/dtb anykernel/
+        cp out/arch/arm64/boot/dtbo.img anykernel/
+        
+        cd anykernel
+        zip -r9 ../Moonstone-Kernel-Flashable.zip *
+
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: Moonstone-Kernel-Image
-        path: |
-          out/arch/arm64/boot/Image*
-          out/arch/arm64/boot/dtbo.img
-          out/arch/arm64/boot/dtb
+        name: Moonstone-Kernel-Flashable-Zip
+        path: Moonstone-Kernel-Flashable.zip
