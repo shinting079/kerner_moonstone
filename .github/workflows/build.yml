@@ -1,4 +1,4 @@
-name: Build Morpheus Moonstone
+name: Build SkillIssue Moonstone
 
 on:
   push:
