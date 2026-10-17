@@ -1,31 +1,68 @@
+name: Build Kernel Moonstone
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
     - name: Setup Environment & Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev wget zip git lld llvm binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+        sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libxml2-dev lld llvm wget zip git ccache \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
     - name: Setup Toolchain (【entity-Proton¦canonical_name=Proton】 Clang)
       run: |
         git clone --depth=1 https://github.com/kdrag0n/proton-clang.git tc/clang
-        # INI KUNCINYA: hapus ld jadul biar tidak dipakai untuk HOST
+        # FIX UTAMA UNTUK ERROR .relr.dyn
         rm -f tc/clang/bin/ld tc/clang/bin/ld.lld tc/clang/bin/ld64.lld
+        tc/clang/bin/clang --version
 
     - name: Build Kernel
       run: |
         export PATH="$GITHUB_WORKSPACE/tc/clang/bin:$PATH"
         export ARCH=arm64
         export SUBARCH=arm64
-        export KBUILD_BUILD_USER="runner"
-        export KBUILD_BUILD_HOST="github-actions"
-        
+        export KBUILD_BUILD_USER="Julian"
+        export KBUILD_BUILD_HOST="Github-Actions"
+        export KBUILD_COMPILER_STRING="$(clang --version | head -n 1)"
+
         mkdir -p out
-        make O=out CC=clang HOSTCC=gcc HOSTCXX=g++ \
+        
+        # defconfig
+        make O=out \
+          CC=clang \
+          HOSTCC=gcc HOSTCXX=g++ \
           CROSS_COMPILE=aarch64-linux-gnu- \
           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
           LLVM=1 LLVM_IAS=1 \
+          AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf \
           stone_defconfig
 
-        make O=out CC=clang HOSTCC=gcc HOSTCXX=g++ \
+        # build
+        make O=out \
+          CC=clang \
+          HOSTCC=gcc HOSTCXX=g++ \
           CROSS_COMPILE=aarch64-linux-gnu- \
           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
           LLVM=1 LLVM_IAS=1 \
-          -j$(nproc)
+          AR=llvm-ar NM=llvm-nm STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf \
+          -j$(nproc --all)
+
+    - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Moonstone-Kernel-Image
+        path: |
+          out/arch/arm64/boot/Image
+          out/arch/arm64/boot/Image.gz
+          out/arch/arm64/boot/dtbo.img
+          out/arch/arm64/boot/dtb.img
