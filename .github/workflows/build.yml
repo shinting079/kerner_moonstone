@@ -18,9 +18,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev wget zip git
 
-    - name: Setup Toolchain (AOSP Clang)
+    - name: Setup Toolchain (Proton Clang)
       run: |
-        git clone --depth=1 https://github.com/chenxiaowu/aosp-clang.git tc/clang
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git tc/clang
         echo "$GITHUB_WORKSPACE/tc/clang/bin" >> $GITHUB_PATH
 
     - name: Build Kernel
