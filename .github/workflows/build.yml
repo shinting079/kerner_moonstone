@@ -21,10 +21,10 @@ jobs:
     - name: Setup Toolchain (Proton Clang)
       run: |
         git clone --depth=1 https://github.com/kdrag0n/proton-clang.git tc/clang
-        echo "$GITHUB_WORKSPACE/tc/clang/bin" >> $GITHUB_PATH
 
     - name: Build Kernel
       run: |
+        export PATH="$GITHUB_WORKSPACE/tc/clang/bin:$PATH"
         export ARCH=arm64
         export SUBARCH=arm64
         export CC=clang
@@ -32,6 +32,7 @@ jobs:
         export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
         export HOSTCC=gcc
         export HOSTCXX=g++
+        export LD=ld.lld
         
         mkdir -p out
         make O=out stone_defconfig
