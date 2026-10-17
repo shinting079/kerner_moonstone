@@ -55,10 +55,22 @@ jobs:
         git clone https://github.com/osm0sis/AnyKernel3.git anykernel
         rm -rf anykernel/.git
         
-        # Salin file Image kernel, dtb, dan dtbo ke folder AnyKernel3
+        # Set nama device di anykernel.sh
+        sed -i 's/device.name1=.*/device.name1=moonstone/g' anykernel/anykernel.sh
+        sed -i 's/device.name2=.*/device.name2=stone/g' anykernel/anykernel.sh
+
+        # Salin Image
         cp out/arch/arm64/boot/Image anykernel/
-        cp out/arch/arm64/boot/dtb anykernel/
-        cp out/arch/arm64/boot/dtbo.img anykernel/
+        
+        # Salin dtbo.img jika ada
+        [ -f out/arch/arm64/boot/dtbo.img ] && cp out/arch/arm64/boot/dtbo.img anykernel/
+        
+        # Gabungkan seluruh file .dtb ke folder AnyKernel3
+        if [ -f out/arch/arm64/boot/dtb ]; then
+          cp out/arch/arm64/boot/dtb anykernel/
+        elif [ -d out/arch/arm64/boot/dts ]; then
+          find out/arch/arm64/boot/dts/ -type f -name "*.dtb" -exec cat {} + > anykernel/dtb
+        fi
         
         cd anykernel
         zip -r9 ../Moonstone-Kernel-Flashable.zip *
