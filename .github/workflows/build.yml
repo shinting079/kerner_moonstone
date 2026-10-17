@@ -35,7 +35,8 @@ jobs:
         make O=out -j$(nproc)
 
     - name: Upload Kernel Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Moonstone-Kernel-Image
         path: out/arch/arm64/boot/Image
+
