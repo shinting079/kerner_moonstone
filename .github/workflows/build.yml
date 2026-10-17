@@ -20,7 +20,6 @@ jobs:
 
     - name: Setup Toolchain (AOSP Clang)
       run: |
-        mkdir -p tc/clang
         git clone --depth=1 https://github.com/chenxiaowu/aosp-clang.git tc/clang
         echo "$GITHUB_WORKSPACE/tc/clang/bin" >> $GITHUB_PATH
 
